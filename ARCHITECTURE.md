@@ -58,6 +58,8 @@ Rojo has many data structures and their purpose might not be immediately clear a
 
 ### Vfs
 
+To learn more, read about [`memofs` architecture](crates/memofs/ARCHITECTURE.md).
+
 ### ServeSession
 
 ### ChangeProcessor
