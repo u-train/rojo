@@ -27,7 +27,7 @@ There are common use cases for this feature, hence `memofs` provides several bac
 As the name implies, it keeps all files and directories in memory.
 This is particularly useful for testing, as it's easy to build, snapshot, and teardown.
 
-To help, `memofs` provides a `VfsSnapshot` object to snapshot the filesystem. The in-memory backend have methods to load from and save to a `VfsSnapshot`.
+To help, `memofs` provides a `VfsSnapshot` object to snapshot the filesystem. The in-memory backend has methods to load from and save to a `VfsSnapshot`.
 
 #### Noop
 
