@@ -8,20 +8,23 @@ This document is a "what the heck is going on" level view of Rojo and the codeba
 
 Rojo is divided into several components, each layering on top of each other provide Rojo's functionality.
 
-At the core of Rojo lies `ServeSession`. As the name implies, it contains all of the components to keep a persistent DOM, react to events to update the DOM, and serve the DOM to consumers. It depends on:
+At the core of Rojo lies [`ServeSession`](#servesession). As the name implies, it contains all of the components to keep a persistent DOM, react to events to update the DOM, and serve the DOM to consumers.
 
-- `RojoTree` to represent the DOM;
-- `Project` to represent your root project file (e.g. `default.project.json`);
-- [`Vfs`](#vfs) to provide a filesystem and emit events on changes;
-- [`ChangeProcessor`](#changeprocessor) to process filesystem events from `Vfs` and consequently update the DOM through the [snapshotting system](#the-snapshotting-system);
+Most of Rojo's uses are built upon `ServeSession`! For example, [`SourcemapCommand`](#sourcemapCommand) uses `ServeSession` to generate the DOM and read it to build the `sourcemap.json` file.
 
-It also provides an API for the higher level components so it can be used with the outside world.
+### The Serve Command
 
-- There is a `MessageQueue` of changes applied to the DOM.
-- There is a channel to send changes to the `ServeSession` and update the DOM.
-- And a `SessionId` to uniquely identify the `ServeSession`.
+There are two main pieces in play when serving: the server and the Studio plugin.
 
-All of the public interfaces via CLI of Rojo are implemented using `ServeSession`.
+The server runs a local `LiveServer` with access to your filesystem (whether it be via the terminal, the visual studio code extension, or a remote machine). It consumes a `ServeSession` and attaches a web server on top. The web server itself is very basic, consisting of around half a dozen endpoints. Generally, `LiveServer` acts as a middleman with the bulk of the work is performed by either the underlying `ServeSession` or the plugin. 
+
+To serve a project to a connecting plugin, the server gathers data on all of the files in that project, puts it into a nice format, and then sends it to the plugin. After that, when something changes on the file system, the underlying `ServeSession` emits new patches. The web server has a `api/subscribe` endpoint where the plugin [long polls](https://en.wikipedia.org/wiki/Push_technology#Long_polling) to receive the patches from the server and apply them to the datamodel in Studio.
+
+When the plugin receives a patch it reads through the patch contents and attempts to to apply the changes described by it. Any sugar (the patch visualizer, as an example) happens on top of the patches received from the server.
+
+### The Sourcemap Command
+### The Build Command
+### The Upload Command
 
 ### The Snapshotting System
 
@@ -37,16 +40,6 @@ Inquiring minds should look at `snapshot/mod.rs` and `snapshot_middleware` for a
 
 Because snapshots are designed to be translated into Instances anyway, this system is also used by the `build` command to turn a Rojo project into a complete file. The backend for serializing a snapshot into a file is provided by `rbx-dom`, which is a different project.
 
-## Serve Command
-
-There are two main pieces in play when serving: the server and the Studio plugin.
-
-The server runs a local `LiveServer` with access to your filesystem (whether it be via the terminal, the visual studio code extension, or a remote machine). It consumes a `ServeSession` and attaches a web server on top. The web server itself is very basic, consisting of around half a dozen endpoints. Generally, `LiveServer` acts as a middleman with the bulk of the work is performed by either the underlying `ServeSession` or the plugin. 
-
-To serve a project to a connecting plugin, the server gathers data on all of the files in that project, puts it into a nice format, and then sends it to the plugin. After that, when something changes on the file system, the underlying `ServeSession` emits new patches. The web server has a `api/subscribe` endpoint where the plugin [long polls](https://en.wikipedia.org/wiki/Push_technology#Long_polling) to receive the patches from the server and apply them to the datamodel in Studio.
-
-When the plugin receives a patch it reads through the patch contents and attempts to to apply the changes described by it. Any sugar (the patch visualizer, as an example) happens on top of the patches received from the server.
-
 ## The Plugin
 
 This section of the document is left incomplete.
@@ -60,6 +53,29 @@ Rojo has many data structures and their purpose might not be immediately clear a
 To learn more, read about [`memofs` architecture](crates/memofs/ARCHITECTURE.md).
 
 ### ServeSession
+
+The linchpin of Rojo. It contains all of the required components to serve a given project file.
+
+Generally, to serve means:
+
+- Rojo maintains a DOM and exposes it to consumers;
+- Rojo is able to accept events to cause changes to the DOM;
+- Rojo is able to emit changes to the DOM to consumer.
+
+It depends on:
+
+- `RojoTree` to represent the DOM;
+- `Project` to represent your root project file (e.g. `default.project.json`);
+- [`Vfs`](#vfs) to provide a filesystem and emit events on changes;
+- [`ChangeProcessor`](#changeprocessor) to process filesystem events from `Vfs` and consequently update the DOM through the [snapshotting system](#the-snapshotting-system);
+
+It also provides an API for the higher level components so it can be used with the outside world.
+
+- There is a `MessageQueue` of changes applied to the DOM.
+- There is a channel to send changes to the `ServeSession` and update the DOM.
+- And a `SessionId` to uniquely identify the `ServeSession`.
+
+All of the public interfaces via CLI of Rojo are implemented using `ServeSession`.
 
 ### ChangeProcessor
 
