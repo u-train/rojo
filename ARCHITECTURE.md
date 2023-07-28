@@ -12,8 +12,8 @@ At the core of Rojo, is `ServeSession`. As the name implies, it contains all of 
 
 - `RojoTree` to represent the DOM;
 - `Project` to represent your root project file (e.g. `default.project.json`).
-- `Vfs` to provide a filesystem and emit events on changes;
-- `ChangeProcessor` to process filesystem events from `Vfs` and consequently update the DOM through the snapshotting system;
+- [`Vfs`](#vfs) to provide a filesystem and emit events on changes;
+- [`ChangeProcessor`](#changeprocessor) to process filesystem events from `Vfs` and consequently update the DOM through the [snapshotting system](#the-snapshotting-system);
 
 It also provides an API for the higher level components so it can be used with the outside world.
 
