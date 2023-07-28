@@ -6,27 +6,22 @@ This document is a "what the heck is going on" level view of Rojo and the codeba
 
 ## Overarching
 
-Rojo is divided into two main pieces: the server and the Studio plugin. The server runs with access to your filesystem (whether it be via the terminal, the visual studio code extension, or a remote machine), with the Studio plugin acting as its main client.
+Rojo is divide into several components, each layering on top of each other provide Rojo's functionality.
 
-When serving a project, the server gathers data on all of the files in that project, puts it into a nice format, and then sends it to the plugin. Then, when something changes on the file system, it does the same thing for only the changed files and sends them to the plugin.
+At the core of Rojo, is `ServeSession`. As the name implies, it contains all of the components to keep a persistent DOM, react to events to update the DOM, and serve the DOM to consumers. It depends on:
 
-When the plugin receives a patch from the server (whether it be the initial patch or any subsequent ones), the plugin reads through the patch and attempts to to apply the changes described by it. Any sugar (the patch visualizer, as an example) happens on top of the patches received from the server.
+- `RojoTree` to represent the DOM;
+- `Project` to represent your root project file (e.g. `default.project.json`).
+- `Vfs` to provide a filesystem and emit events on changes;
+- `ChangeProcessor` to process filesystem events from `Vfs` and consequently update the DOM through the snapshotting system;
 
-## Server
+It also provides an API for the higher level components so it can be used with the outside world.
 
-Rojo's server component is divided into a few distinct pieces:
+- There is a `MessageQueue` of changes applied to the DOM.
+- There is a channel to send changes to the `ServeSession` and update the DOM.
+- And a `SessionId` to uniquely identify the `ServeSession`.
 
-- The web server
-- The CLI
-- The snapshotting system
-
-### The CLI
-
-The Command Line Interface (CLI) of Rojo is the only interface for the program. It's initialized in `main.rs` but is hosted in `src/cli`.
-
-Each command for the CLI is hosted in its own file, with the `mod.rs` file for the `cli` module handling parsing and running each command. The commands are mostly self-contained, though may also interface with Rojo's other code when necessary.
-
-Specifically, they may interface with the web server and snapshotting system.
+All of the public interfaces via CLI of Rojo are implemented using `ServeSession`.
 
 ### The Snapshotting System
 
@@ -42,11 +37,15 @@ Inquiring minds should look at `snapshot/mod.rs` and `snapshot_middleware` for a
 
 Because snapshots are designed to be translated into Instances anyway, this system is also used by the `build` command to turn a Rojo project into a complete file. The backend for serializing a snapshot into a file is provided by `rbx-dom`, which is a different project.
 
-### The Web Server
+## Serve Command
 
-Rojo uses a small web server to forward changes to the plugin. Once a patch is computed by the snapshot system, it's made available via the server's API. The plugin is requesting patches regularly using a technique called [long polling](https://en.wikipedia.org/wiki/Push_technology#Long_polling) to receive the patches from the server and apply them to the datamodel in Studio.
+There are two main pieces in doing this: the server and the Studio Plugin.
 
-The web server itself is very basic, consisting of around half a dozen endpoints. The bulk of the work is performed by either the snapshot system or the plugin, with the web server acting as a middleman.
+The server runs a local `LiveServer` on your computer (be it through a terminal, the visual studio extension, or a remote machine). It consumes a `ServeSession` and attaches a web server on top. The web server itself is very basic, consisting of around half a dozen endpoints. Generally, `LiveServer` acts as a middleman with the bulk of the work is performed by either the underlying `ServeSession` or the plugin. 
+
+To serve a project to a connecting plugin, the server gathers data on all of the files in that project, puts it into a nice format, and then sends it to the plugin. After that, when something changes on the file system, the underlying `ServeSession` emits new patches. The web server has a `api/subscribe` endpoint where the plugin [long polls](https://en.wikipedia.org/wiki/Push_technology#Long_polling) on to receive the patches from the server and apply them to the datamodel in Studio.
+
+When the plugin receives a patch from the server (whether it be the initial patch or any subsequent ones), the plugin reads through the patch and attempts to to apply the changes described by it. Any sugar (the patch visualizer, as an example) happens on top of the patches received from the server.
 
 ## The Plugin
 
