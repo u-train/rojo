@@ -6,12 +6,12 @@ This document is a "what the heck is going on" level view of Rojo and the codeba
 
 ## Overarching
 
-Rojo is divide into several components, each layering on top of each other provide Rojo's functionality.
+Rojo is divided into several components, each layering on top of each other provide Rojo's functionality.
 
-At the core of Rojo, is `ServeSession`. As the name implies, it contains all of the components to keep a persistent DOM, react to events to update the DOM, and serve the DOM to consumers. It depends on:
+At the core of Rojo lies `ServeSession`. As the name implies, it contains all of the components to keep a persistent DOM, react to events to update the DOM, and serve the DOM to consumers. It depends on:
 
 - `RojoTree` to represent the DOM;
-- `Project` to represent your root project file (e.g. `default.project.json`).
+- `Project` to represent your root project file (e.g. `default.project.json`);
 - [`Vfs`](#vfs) to provide a filesystem and emit events on changes;
 - [`ChangeProcessor`](#changeprocessor) to process filesystem events from `Vfs` and consequently update the DOM through the [snapshotting system](#the-snapshotting-system);
 
@@ -39,13 +39,13 @@ Because snapshots are designed to be translated into Instances anyway, this syst
 
 ## Serve Command
 
-There are two main pieces in doing this: the server and the Studio Plugin.
+There are two main pieces in play when serving: the server and the Studio plugin.
 
-The server runs a local `LiveServer` on your computer (be it through a terminal, the visual studio extension, or a remote machine). It consumes a `ServeSession` and attaches a web server on top. The web server itself is very basic, consisting of around half a dozen endpoints. Generally, `LiveServer` acts as a middleman with the bulk of the work is performed by either the underlying `ServeSession` or the plugin. 
+The server runs a local `LiveServer` with access to your filesystem (whether it be via the terminal, the visual studio code extension, or a remote machine). It consumes a `ServeSession` and attaches a web server on top. The web server itself is very basic, consisting of around half a dozen endpoints. Generally, `LiveServer` acts as a middleman with the bulk of the work is performed by either the underlying `ServeSession` or the plugin. 
 
-To serve a project to a connecting plugin, the server gathers data on all of the files in that project, puts it into a nice format, and then sends it to the plugin. After that, when something changes on the file system, the underlying `ServeSession` emits new patches. The web server has a `api/subscribe` endpoint where the plugin [long polls](https://en.wikipedia.org/wiki/Push_technology#Long_polling) on to receive the patches from the server and apply them to the datamodel in Studio.
+To serve a project to a connecting plugin, the server gathers data on all of the files in that project, puts it into a nice format, and then sends it to the plugin. After that, when something changes on the file system, the underlying `ServeSession` emits new patches. The web server has a `api/subscribe` endpoint where the plugin [long polls](https://en.wikipedia.org/wiki/Push_technology#Long_polling) to receive the patches from the server and apply them to the datamodel in Studio.
 
-When the plugin receives a patch from the server (whether it be the initial patch or any subsequent ones), the plugin reads through the patch and attempts to to apply the changes described by it. Any sugar (the patch visualizer, as an example) happens on top of the patches received from the server.
+When the plugin receives a patch it reads through the patch contents and attempts to to apply the changes described by it. Any sugar (the patch visualizer, as an example) happens on top of the patches received from the server.
 
 ## The Plugin
 
