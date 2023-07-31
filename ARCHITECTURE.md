@@ -79,13 +79,25 @@ It depends on:
 - [`Vfs`](#vfs) to provide a filesystem and emit events on changes;
 - [`ChangeProcessor`](#changeprocessor) to process filesystem events from `Vfs` and consequently update the DOM through the [snapshotting system](#the-snapshotting-system);
 
-It also provides an API for the higher level components so it can be used with the outside world.
+It also provides an API for the higher level components so it can be used with the outside world:
 
-- There is a `MessageQueue` of changes applied to the DOM.
-- There is a channel to send changes to the `ServeSession` and update the DOM.
+- There is a [`MessageQueue`](#messagequeue) consumers listen on for patches applied to the DOM;
+- There is a channel to send patches and update the DOM;
 - And a `SessionId` to uniquely identify the `ServeSession`.
 
-All of the public interfaces via CLI of Rojo are implemented using `ServeSession`.
+The primary interface for a `ServeSession` is the web server used by the [`serve` command](#servecommand). Additionally, several of Rojo's commands are implemented using `ServeSession`.
+
+### MessageQueue
+
+`MessageQueue` manages a persistent history of messages and a way to subscribe asynchronously to messages past or future.
+
+It does this primarily by having the subscribers keep a cursor of the message they're currently on. So, when a subscription does occurs:
+
+- If the cursor is behind the latest message, it will be immediately be fired with all messages past the cursor;
+- If the cursor is on the latest message, it will fire on the next message given;
+- If the cursor is ahead of the latest message, it will fire on the message after the cursor.
+
+### SessionId
 
 ### ChangeProcessor
 
